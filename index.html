@@ -7,6 +7,7 @@
 </head>
 <body>
   <h1>AI Camera Answer</h1>
+  <!-- Video element to display the camera feed -->
   <video id="video" width="100%" height="auto" autoplay></video>
   <div id="output"></div>
 
@@ -15,14 +16,32 @@
     const output = document.getElementById('output');
     const apiKey = 'YOUR_OPENAI_API_KEY_HERE'; // Replace with your OpenAI API key
 
-    // Access the camera
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
+    // Access the camera and show it on the screen
+    navigator.mediaDevices.enumerateDevices()
+      .then(devices => {
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        const backCamera = videoDevices.find(device => device.label.includes('back') || device.label.includes('environment'));
+
+        if (backCamera) {
+          navigator.mediaDevices.getUserMedia({
+            video: { deviceId: backCamera.deviceId }
+          })
+          .then(stream => {
+            // Set the video element source to the camera stream
+            video.srcObject = stream;
+          })
+          .catch(err => {
+            console.error('Error accessing back camera:', err);
+            output.innerHTML = '<p>Could not access the back camera.</p>';
+          });
+        } else {
+          console.error('No back camera found');
+          output.innerHTML = '<p>Back camera not available on this device.</p>';
+        }
       })
       .catch(err => {
-        console.error('Camera error:', err);
-        output.innerHTML = '<p>Camera access failed. Please grant camera permissions.</p>';
+        console.error('Error enumerating devices:', err);
+        output.innerHTML = '<p>Error accessing video devices.</p>';
       });
 
     // Process the video feed for text (OCR)
