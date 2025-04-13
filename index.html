@@ -21,12 +21,18 @@
     navigator.mediaDevices.enumerateDevices()
       .then(devices => {
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
-        const backCamera = videoDevices.find(device => device.label.includes('back') || device.label.includes('environment'));
 
-        if (backCamera) {
-          console.log('Back camera found:', backCamera.label);
+        // Log all available cameras to the console
+        console.log('Available cameras:', videoDevices);
+
+        // Try to select the first available camera (either front or back)
+        const selectedCamera = videoDevices[0];
+
+        if (selectedCamera) {
+          console.log('Using camera:', selectedCamera.label);
+
           navigator.mediaDevices.getUserMedia({
-            video: { deviceId: backCamera.deviceId }
+            video: { deviceId: selectedCamera.deviceId }
           })
           .then(stream => {
             console.log('Camera stream started');
@@ -34,12 +40,12 @@
             video.srcObject = stream;
           })
           .catch(err => {
-            console.error('Error accessing back camera:', err);
-            output.innerHTML = '<p>Could not access the back camera.</p>';
+            console.error('Error accessing camera:', err);
+            output.innerHTML = '<p>Could not access the camera.</p>';
           });
         } else {
-          console.error('No back camera found');
-          output.innerHTML = '<p>Back camera not available on this device.</p>';
+          console.error('No video devices found');
+          output.innerHTML = '<p>No cameras found on this device.</p>';
         }
       })
       .catch(err => {
