@@ -1,1 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Camera Answer</title>
+</head>
+<body>
+  <h1>AI Camera Answer</h1>
+  <video id="video" width="100%" height="auto" autoplay></video>
+  <div id="output"></div>
+
+  <script>
+    const video = document.getElementById('video');
+    const output = document.getElementById('output');
+    const apiKey = 'YOUR_OPENAI_API_KEY_HERE'; // Paste your API key here
+
+    // Access the camera
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => console.error('Camera error: ', err));
+
+    // Process the video feed for text (OCR)
+    async function captureAndRecognizeText() {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Use Tesseract.js for OCR (included via CDN)
+      Tesseract.recognize(
+        canvas,
+        'eng',
+        { logger: m => console.log(m) }
+      ).then(({ data: { text } }) => {
+        // Send the OCR result to OpenAI for an answer
+        fetch('https://api.openai.com/v1/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4',
+            prompt: text,
+            max_tokens: 100
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          output.innerHTML = `<p><strong>Question:</strong> ${text}</p><p><strong>Answer:</strong> ${data.choices[0].text}</p>`;
+        })
+        .catch(error => console.error('Error with OpenAI API:', error));
+      });
+    }
+
+    // Continuously capture and process every second
+    setInterval(captureAndRecognizeText, 1000);
+  </script>
+
+  <!-- Include Tesseract.js for OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js"></script>
+</body>
+</html>
 
